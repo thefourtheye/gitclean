@@ -25,7 +25,7 @@ elif [[ $# -eq 1 ]]; then
 			PWD=`pwd`
 		fi
 		rm $HOME/.gitclean
-		ln -s $PWD/$0 $HOME/.gitclean >& /dev/null
+		cp $PWD/$0 $HOME/.gitclean >& /dev/null
 		if [[ $? -ne 0 ]]; then
 			echo -e "\nLooks like, $HOME doesn't have write permission. Installation failed. Exiting..."
 			exit -1
