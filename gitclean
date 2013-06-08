@@ -1,5 +1,7 @@
 #!/bin/bash
-VERSION="0.1 (beta)"
+# Github Location : https://github.com/thefourtheye/gitclean
+
+VERSION="0.2 (beta)"
 shopt -s nocasematch
 
 #Checking whether $HOME variable is set
@@ -8,29 +10,36 @@ if [[ -z "$HOME" ]]; then
 	exit -1
 fi
 
-if [[ $# -ge 2 ]]; then
+if [[ $# -gt 1 ]]; then
+	# If there is more than 1 parameter, show usage and exit
 	echo -e "\nUsage : $0 [install/version]"
 	exit -1
 elif [[ $# -eq 1 ]]; then
 	if [[ $1 != "install" && $1 != "version" ]]; then
+		# If there is only one 1 parameter, and thats not install or version, show usage and exit
 		echo -e "\nUsage : $0 [install/version]\n$1 is an invalid parameter"
 		exit -1
 	elif [[ $1 == "version" ]]; then
+		# If there is only one 1 parameter, and if thats version, show VERSION and exit
 		echo $VERSION
 		exit 0
 	else
-		set -x
+		#set -x
+		# If there is only one 1 parameter, and if thats install, get the current script's absolute path
 		PWD=`dirname $0`
 		if [[ $0 =~ ^[\.\/] ]]; then
-			PWD=`pwd`
+			PWD=`pwd -P`
 		fi
-		rm $HOME/.gitclean
+		# If older version is already installed, remove that first
+		rm -f $HOME/.gitclean >& /dev/null
+		# Copy the current file
 		cp $PWD/$0 $HOME/.gitclean >& /dev/null
 		if [[ $? -ne 0 ]]; then
 			echo -e "\nLooks like, $HOME doesn't have write permission. Installation failed. Exiting..."
 			exit -1
 		fi
 		unalias gitclean >& /dev/null
+		# Insert the alias creation command to $HOME/.bashrc, so that it will be there in every session
 		echo "alias gitclean=$HOME/.gitclean" >> $HOME/.bashrc
 		if [[ $? -ne 0 ]]; then
 			echo -e "\nLooks like, $HOME doesn't have write permission. Installation failed. Exiting..."
