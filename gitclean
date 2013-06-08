@@ -1,0 +1,88 @@
+#!/bin/bash
+VERSION="0.1 (beta)"
+shopt -s nocasematch
+
+#Checking whether $HOME variable is set
+if [[ -z "$HOME" ]]; then
+	echo "HOME environment variable is not set. Exiting..." 
+	exit -1
+fi
+
+if [[ $# -ge 2 ]]; then
+	echo -e "\nUsage : $0 [install/version]"
+	exit -1
+elif [[ $# -eq 1 ]]; then
+	if [[ $1 != "install" && $1 != "version" ]]; then
+		echo -e "\nUsage : $0 [install/version]\n$1 is an invalid parameter"
+		exit -1
+	elif [[ $1 == "version" ]]; then
+		echo $VERSION
+		exit 0
+	else
+		set -x
+		PWD=`dirname $0`
+		if [[ $0 =~ ^[\.\/] ]]; then
+			PWD=`pwd`
+		fi
+		rm $HOME/.gitclean
+		ln -s $PWD/$0 $HOME/.gitclean >& /dev/null
+		if [[ $? -ne 0 ]]; then
+			echo -e "\nLooks like, $HOME doesn't have write permission. Installation failed. Exiting..."
+			exit -1
+		fi
+		unalias gitclean >& /dev/null
+		echo "alias gitclean=$HOME/.gitclean" >> $HOME/.bashrc
+		if [[ $? -ne 0 ]]; then
+			echo -e "\nLooks like, $HOME doesn't have write permission. Installation failed. Exiting..."
+			exit -1
+		fi
+		alias gitclean=$HOME/.gitclean
+		echo -e "\nInstallation Successful. Please logout and login again. You can access gitclean by simply typing 'gitclean'."
+		exit 0
+	fi
+fi
+
+#Checking whether git exists in $PATH
+which git >& /dev/null
+if [[ $? -ne 0 ]]; then
+	echo "git not found in \$PATH ($PATH). Exiting..."
+	exit -1
+fi
+
+Counter=0
+Total=0
+if [[ -s $HOME/.gitclean_extensions ]]; then
+	echo -e "\nInteresting Extensions found in [$HOME/.gitclean_extensions] are as follows"
+	while read line; do
+		echo "["$line"]"
+	done < "$HOME/.gitclean_extensions"
+	echo -e ""
+	while read line; do
+		Total=`expr $Total + 1`
+		file_extension=`echo $line | awk -F . '{if (NF>1) {print $NF}}'`
+		grep -e "^$file_extension$" $HOME/.gitclean_extensions >& /dev/null
+		if [ $? -eq 0 ] || [ -z $file_extension ]; then
+			Counter=`expr $Counter + 1`
+			echo $line | cut -f 2- -d " "
+		fi
+	done < <(git status --porcelain)
+else
+	echo -e "\nInteresting Extensions file [$HOME/.gitclean_extensions] is either empty or not found.\n"
+	while read line; do
+		Total=`expr $Total + 1`
+		echo $line | cut -f 2- -d " "
+	done < <(git status --porcelain)
+fi
+
+if [[ $Total -ne 0 ]]; then
+	echo -e ""
+	read -p "$Counter interesting files found, in total $Total files. Are you sure want to clean? [y/Y - Yes, Any other Key - No] : " -n 1 -r
+	if [[ $REPLY =~ ^[Y|y]$ ]]; then
+		echo -e "\nCleaning...\n"
+		git clean -qfxd
+	else
+		echo -e "\nCleaning was not done. Exiting..."
+	fi
+else
+	echo -e "$Counter interesting files found, in total $Total files. Cleaning was not done. Exiting..."
+fi
